@@ -50,8 +50,8 @@ contract XpDAI is ERC20, ERC20Burnable, ERC20Votes, ERC20Permit, Ownable {
 
     function _buyFromUniswap(address recipient, uint256 amount) private {
         address[] memory path = new address[](2);
-        path[0] = uniswapRouter.WETH();
-        path[1] = address(this);
+        path[0] = uniswapRouter.WETH(); // Use WETH address
+        path[1] = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // Use the other token address
 
         // Swap tokens on Uniswap
         uniswapRouter.swapExactETHForTokensSupportingFeeOnTransferTokens{value: amount}(
