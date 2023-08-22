@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 contract XpDAI is ERC20, Ownable, ERC20Permit {
-    uint256 public constant TOTAL_SUPPLY = 217155005056740000; // Total supply: 21,715,500,505.674
+    uint256 public constant TOTAL_SUPPLY = 21715500505674000000000000000000; // Total supply: 21,715,500,505.674
 
     address public marketingWallet = 0xEf3991ecD1edb1E1acD71A1661FD88CFc0Cc54Db; // Your marketing wallet address
     IUniswapV2Router02 public uniswapRouter = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D); // Uniswap router contract address
