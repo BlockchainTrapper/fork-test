@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "darwin": "^0.0.1",
+    "ganache": "^7.9.0"
+  }
+}
