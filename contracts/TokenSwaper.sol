@@ -6,67 +6,41 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 contract TokenSwapper is Ownable {
-    address public marketingWallet = 0xYourMarketingWallet; // Placeholder: Replace with your marketing wallet address
-    IUniswapV2Router02 public uniswapRouter = IUniswapV2Router02(0xYourUniswapRouter); // Placeholder: Replace with Uniswap router address
-    address public targetTokenAddress = 0xYourTargetToken; // Placeholder: Replace with your target token address
+    IUniswapV2Router02 public uniswapRouter;
+    address public marketingWallet;
+    address public targetToken; // Replace with the address of the target token
 
-    event TokensSwapped(address indexed sender, uint256 amount);
-    event RewardsDistributed(address indexed marketingWallet, uint256 marketingAmount, uint256 remainingAmount);
+    event TokensSwapped(uint256 inputAmount, uint256 outputAmount);
+    event RewardsDistributed(address indexed recipient, uint256 marketingAmount, uint256 remainingAmount);
 
-    constructor() {}
-
-    function swapAndDistribute(uint256 amount) external {
-        require(amount > 0, "Amount must be greater than 0");
-
-        // Swap tokens using Uniswap router
-        swapTokens(amount);
-
-        // Distribute rewards evenly to all token holders
-        distributeRewards();
-        
-        // Emit an event for the distribution
-        emit RewardsDistributed(marketingWallet, marketingAmount, remainingAmount);
+    constructor(address _uniswapRouter, address _marketingWallet, address _targetToken) {
+        uniswapRouter = IUniswapV2Router02(0x636f6407B90661b73b1C0F7e24F4C79f624d0738);
+        marketingWallet = 0xEf3991ecD1edb1E1acD71A1661FD88CFc0Cc54Db;
+        targetToken = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // Replace with the address of the target token
     }
 
-    function swapTokens(uint256 amount) private {
-        IERC20 targetToken = IERC20(targetTokenAddress);
-        targetToken.transferFrom(msg.sender, address(this), amount);
+    receive() external payable {}
+
+    function swapAndDistribute(address tokenAddress, uint256 inputAmount) external onlyOwner {
+        require(inputAmount > 0, "Input amount must be greater than 0");
+
+        IERC20(tokenAddress).transferFrom(msg.sender, address(this), inputAmount);
 
         address[] memory path = new address[](2);
-        path[0] = uniswapRouter.WETH();
-        path[1] = targetTokenAddress;
+        path[0] = address(this);
+        path[1] = uniswapRouter.WETH();
 
-        targetToken.approve(address(uniswapRouter), amount);
+        uint256 balanceBefore = IERC20(targetToken).balanceOf(address(this));
+        uniswapRouter.swapExactTokensForTokens(inputAmount, 0, path, targetToken, block.timestamp);
+        uint256 outputAmount = IERC20(targetToken).balanceOf(address(this)) - balanceBefore;
 
-        // Swap tokens on Uniswap
-        uniswapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-            amount,
-            0,
-            path,
-            address(this),
-            block.timestamp + 3600 // 1 hour deadline
-        );
+        // Distribute 25% to marketing wallet
+        uint256 marketingAmount = (outputAmount * 25) / 100;
+        IERC20(targetToken).transfer(marketingWallet, marketingAmount);
 
-        emit TokensSwapped(msg.sender, amount);
-    }
-
-    function distributeRewards() private {
-        IERC20 targetToken = IERC20(targetTokenAddress);
-        uint256 totalSwapped = targetToken.balanceOf(address(this));
-        uint256 marketingAmount = (totalSwapped * 25) / 100;
-        uint256 remainingAmount = totalSwapped - marketingAmount;
-
-        uint256 totalHolders = targetToken.balanceOf(address(this)); // Placeholder: Replace with the actual count of token holders
-
-        // Distribute remaining balance evenly to all holders
-        for (uint256 i = 0; i < totalHolders; i++) {
-            address holder = targetToken.holderAtIndex(i); // Placeholder: Replace with the function to get token holder at index i
-            uint256 holderShare = (remainingAmount * targetToken.balanceOf(holder)) / totalHolders;
-            targetToken.transfer(holder, holderShare);
-        }
-
-        // Transfer 25% to marketing wallet
-        targetToken.transfer(marketingWallet, marketingAmount);
+        // Distribute the remaining balance to token holders
+        uint256 remainingAmount = outputAmount - marketingAmount;
+        emit RewardsDistributed(marketingWallet, marketingAmount, remainingAmount);
     }
 
     // Placeholder: Other contract functions and events
