@@ -1,34 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "./TokenSwapper.sol"; // Import the TokenSwapper contract
 
-contract TokenSwapper is Ownable {
-    IERC20 public oldToken;
-    IERC20 public newToken;
+contract Token is ERC20, Ownable, ERC20Permit {
+    uint256 public constant TOTAL_SUPPLY = 2171550050567400000000000000; // Total supply: 21,715,500,505.674
 
-    constructor(address _oldTokenAddress, address _newTokenAddress) {
-        oldToken = IERC20(_oldTokenAddress);
-        newToken = IERC20(_newTokenAddress);
+    address public tokenSwapperAddress = 0xYourTokenSwapperAddress; // Placeholder: Replace with your TokenSwapper contract address
+
+    constructor() ERC20("YourTokenName", "YourTokenSymbol") ERC20Permit("YourTokenName") {
+        transferOwnership(0xYourOwnerAddress); // Placeholder: Replace with the address you want to set as the owner
+        _mint(msg.sender, TOTAL_SUPPLY);
     }
 
-    function swapAndDistribute(uint256 rewardAmount) external {
-        require(rewardAmount > 0, "Amount must be greater than 0");
+    function _transfer(address sender, address recipient, uint256 amount) internal override {
+        uint256 taxAmount = (amount * 6) / 100; // 6% transfer tax
+        uint256 rewardsAmount = amount - taxAmount;
 
-        // Transfer old tokens from sender to this contract
-        oldToken.transferFrom(msg.sender, address(this), rewardAmount);
+        // Transfer tax amount to the TokenSwapper contract
+        super._transfer(sender, tokenSwapperAddress, taxAmount);
 
-        // Swap old tokens for new tokens
-        // Replace this with your actual swap logic using Uniswap or any other DEX
-
-        // Distribute new tokens to token holders based on their balances
-        uint256 totalSupply = oldToken.balanceOf(address(this));
-        for (uint256 i = 0; i < totalSupply; i++) {
-            address holder = oldToken.ownerOf(i);
-            uint256 balance = oldToken.balanceOf(holder);
-            uint256 distributionAmount = (rewardAmount * balance) / totalSupply;
-            newToken.transfer(holder, distributionAmount);
-        }
+        // Transfer rewards amount to the recipient
+        super._transfer(sender, recipient, rewardsAmount);
     }
+
+    // Placeholder: Other contract functions and events
 }
